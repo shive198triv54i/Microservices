@@ -48,6 +48,7 @@ namespace ProductService
      };
  });
 
+
             builder.Services.AddAuthorization();
 
 

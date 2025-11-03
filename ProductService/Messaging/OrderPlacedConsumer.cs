@@ -11,21 +11,15 @@ namespace ProductService.Messaging
     public class OrderPlacedConsumer : BackgroundService
     {
         private readonly IServiceScopeFactory _scopeFactory;
-        private readonly RmqPublisher _publisher;
         private readonly IModel _ch;
 
-        public OrderPlacedConsumer(IServiceScopeFactory scopeFactory, RmqPublisher publisher)
+        public OrderPlacedConsumer(IServiceScopeFactory scopeFactory)
         {
             _scopeFactory = scopeFactory;
-            _publisher = publisher;
 
             var factory = new ConnectionFactory { HostName = "localhost" };
             var conn = factory.CreateConnection();
             _ch = conn.CreateModel();
-
-            _ch.ExchangeDeclare("order.exchange", ExchangeType.Direct, durable: true);
-            _ch.QueueDeclare("order.placed", durable: true, exclusive: false,autoDelete:false);
-            _ch.QueueBind("order.placed", "order.exchange", "order.placed");
         }
 
         protected override Task ExecuteAsync(CancellationToken stoppingToken)
@@ -64,13 +58,21 @@ namespace ProductService.Messaging
                         }
                     }
 
-                    _publisher.Publish("product.stock.result", new { OrderId = msg.OrderId, IsSuccess = success });
-
                     _ch.BasicAck(e.DeliveryTag, false);
                 }
-                catch
+                catch (Exception)
                 {
-                    _ch.BasicNack(e.DeliveryTag, false, true);
+                    var death = e.BasicProperties.Headers?["x-death"] as List<object>;
+                    int retry = death?.Count ?? 0;
+
+                    if (retry >= 3)
+                    {
+                        _ch.BasicNack(e.DeliveryTag, false, false); // Send to DLQ
+                    }
+                    else
+                    {
+                        _ch.BasicNack(e.DeliveryTag, false, true); // Requeue retry
+                    }
                 }
             };
 
