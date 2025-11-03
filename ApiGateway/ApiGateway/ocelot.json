@@ -31,7 +31,23 @@
         "AuthenticationProviderKey": "Bearer",
         "AllowedScopes": []
       }
+    },
+    {
+      "DownstreamPathTemplate": "/api/orders/{everything}",
+      "UpstreamPathTemplate": "/orders/{everything}",
+      "UpstreamHttpMethod": [ "GET", "POST" ],
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "localhost",
+          "Port": 7052
+        }
+      ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKey": "Bearer",
+        "AllowedScopes": []
+      }
     }
   ],
-  "GlobalConfiguration": {}
-}
+      "GlobalConfiguration": {}
+    }

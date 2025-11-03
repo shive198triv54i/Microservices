@@ -1,12 +1,12 @@
 
-using Microsoft.EntityFrameworkCore;
-using ProductService.Repositries;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using OrderService.Messaging;
+using OrderService.Repositories;
 using System.Text;
-using ProductService.Messaging;
 
-namespace ProductService
+namespace OrderService
 {
     public class Program
     {
@@ -20,11 +20,8 @@ namespace ProductService
             // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen();
-
-            builder.Services.AddDbContext<ProductDbContext>(
-                option => option.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
-
-            builder.Services.AddScoped<ProductRepository>();
+            builder.Services.AddDbContext<OrderDbContext>(opt =>
+               opt.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
             builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
  .AddJwtBearer(options =>
@@ -47,13 +44,11 @@ namespace ProductService
          )
      };
  });
+            builder.Services.AddControllers();
 
-            builder.Services.AddAuthorization();
-
-
+            builder.Services.AddScoped<OrderRepository>();
             builder.Services.AddSingleton<RmqPublisher>();
-            builder.Services.AddHostedService<OrderPlacedConsumer>();
-
+            builder.Services.AddHostedService<RmqConsumer>();
             var app = builder.Build();
 
             // Configure the HTTP request pipeline.
@@ -66,6 +61,7 @@ namespace ProductService
             app.UseHttpsRedirection();
 
             app.UseAuthentication();
+
             app.UseAuthorization();
 
 
